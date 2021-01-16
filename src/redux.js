@@ -3,6 +3,7 @@ import * as localStorageVariable from "./variables/LocalStorage";
 import instance from "./services/AxiosServices";
 
 const LOGIN_SUCCESS = "LOGIN_SUCESS";
+const LOGOUT_SUCCESS = "LOGOUT_SUCCES";
 
 export const authAction = {
   login: (username, password) => async (dispatch) => {
@@ -51,23 +52,32 @@ export const authAction = {
     localStorage.clear();
 
     dispatch({
-      type: "LOGOUT",
+      type: LOGOUT_SUCCESS,
     });
   },
-  getAccount: (accountNumberFromBody) => async (dispatch) => {
-    const accountNumber = accountNumberFromBody
-      ? accountNumberFromBody
-      : "0000000000000";
+};
+
+const GET_ACCOUNTS_LIST_SUCCESS = "GET_ACCOUNTS_LIST_SUCCESS";
+
+export const accountAction = {
+  getAccounts: () => async (dispatch) => {
     try {
       instance.defaults.headers.common[
-        "x_authorization"
-      ] = localStorage.getItem(localStorageVariable.storeAccessToken);
-      const { data } = await instance.get(
-        `accounts/accountNumber/${accountNumber}`
-      );
+        "Authorization"
+      ] = `bearer ${localStorage.getItem(
+        localStorageVariable.storeAccessToken
+      )}`;
+
+      const { data } = await instance.get(`auth/users`);
+
+      dispatch({
+        type: GET_ACCOUNTS_LIST_SUCCESS,
+        payload: data.data,
+      });
+
       return {
         status: true,
-        data,
+        data: data.data,
       };
     } catch (error) {
       return {
@@ -75,582 +85,235 @@ export const authAction = {
       };
     }
   },
-  getReceivers: () => async (dispatch) => {
-    instance.defaults.headers.common["x_authorization"] = localStorage.getItem(
-      localStorageVariable.storeAccessToken
-    );
-    const { data } = await instance.get("accounts/receivers");
-    dispatch({
-      type: "GET_RECEIVERS",
-      payload: data,
-    });
-  },
-  addReceiver: (receiver) => async (dispatch) => {
-    instance.defaults.headers.common["x_authorization"] = localStorage.getItem(
-      localStorageVariable.storeAccessToken
-    );
+};
+
+const GET_CATEGORIES_LIST_SUCCES = "GET_CATEGORIES_LIST_SUCCES";
+const ADD_CATEGORY_SUCCESS = "ADD_CATEGORY_SUCCESS";
+const DELETE_CATEGORY_SUCCESS = "DELETE_CATEGORY_SUCCESS";
+const HANDLE_EDIT_CATEGORY = "HANDLE_EDIT_CATEGORY";
+const EDIT_CATEGORY_SUCCESS = "EDIT_CATEGORY_SUCCESS";
+
+export const categoryAction = {
+  getCategories: () => async (dispatch) => {
     try {
-      const { data } = await instance.post(`accounts/receivers`, receiver);
+      instance.defaults.headers.common[
+        "Authorization"
+      ] = `bearer ${localStorage.getItem(
+        localStorageVariable.storeAccessToken
+      )}`;
+
+      const { data } = await instance.get(`categories`);
+
       dispatch({
-        type: "ADD_RECEIVER_SUCCESS",
+        type: GET_CATEGORIES_LIST_SUCCES,
         payload: data,
       });
+
+      return {
+        status: true,
+        data: data,
+      };
     } catch (error) {
+      return {
+        status: false,
+      };
+    }
+  },
+  addCategory: (ten) => async (dispatch) => {
+    try {
+      instance.defaults.headers.common[
+        "Authorization"
+      ] = `bearer ${localStorage.getItem(
+        localStorageVariable.storeAccessToken
+      )}`;
+
+      const { data } = await instance.post(`categories`, { ten });
+
       dispatch({
-        type: "ADD_RECEIVER_FAILED",
+        type: ADD_CATEGORY_SUCCESS,
+        payload: data,
+      });
+
+      return {
+        status: true,
+        data: data,
+      };
+    } catch (error) {
+      let msg = "Có lỗi xảy ra, vui lòng thử lại.";
+      if (error.response) {
+        msg = error.response.data.message;
+      }
+
+      return {
+        status: false,
+        msg,
+      };
+    }
+  },
+  deleteCategory: (id) => async (dispatch) => {
+    try {
+      instance.defaults.headers.common[
+        "Authorization"
+      ] = `bearer ${localStorage.getItem(
+        localStorageVariable.storeAccessToken
+      )}`;
+
+      await instance.delete(`categories/${id}`);
+
+      dispatch({
+        type: DELETE_CATEGORY_SUCCESS,
         payload: {
-          msg: error.response.data,
+          id,
         },
       });
+
+      return {
+        status: true,
+      };
+    } catch (error) {
+      let msg = "Có lỗi xảy ra, vui lòng thử lại.";
+      if (error.response) {
+        msg = error.response.data.message;
+      }
+
+      return {
+        status: false,
+        msg,
+      };
     }
   },
-  deleteReceivers: (receiverIDs) => async (dispatch) => {
-    instance.defaults.headers.common["x_authorization"] = localStorage.getItem(
-      localStorageVariable.storeAccessToken
-    );
-    try {
-      const { data } = await instance.post(`accounts/receivers-delete`, {
-        receiverIDs,
-      });
-      dispatch({
-        type: "DELETE_RECEIVERS_SUCCESS",
-        payload: data,
-      });
-    } catch (error) {}
-  },
-  getPaymentAccounts: () => async (dispatch) => {
-    instance.defaults.headers.common["x_authorization"] = localStorage.getItem(
-      localStorageVariable.storeAccessToken
-    );
-    const { data } = await instance.get("accounts/payment-accounts");
+  handleEditCategory: (id) => async (dispatch) => {
     dispatch({
-      type: "GET_PAYMENT_SAVING_ACCOUNTS",
-      payload: data,
+      type: HANDLE_EDIT_CATEGORY,
+      payload: {
+        id,
+      },
     });
   },
-  getSavingAccounts: () => async (dispatch) => {
-    instance.defaults.headers.common["x_authorization"] = localStorage.getItem(
-      localStorageVariable.storeAccessToken
-    );
-    const { data } = await instance.get("accounts/saving-accounts");
-    dispatch({
-      type: "GET_PAYMENT_SAVING_ACCOUNTS",
-      payload: data,
-    });
-  },
-};
+  editCategory: (id, ten) => async (dispatch) => {
+    try {
+      instance.defaults.headers.common[
+        "Authorization"
+      ] = `bearer ${localStorage.getItem(
+        localStorageVariable.storeAccessToken
+      )}`;
 
-export const transactionAction = {
-  getOTP: () => async (_) => {
-    instance.defaults.headers.common["x_authorization"] = localStorage.getItem(
-      localStorageVariable.storeAccessToken
-    );
-    try {
-      const { data } = await instance.post(`transactions/send-otp`);
-      return {
-        status: true,
-        msg: data,
-      };
-    } catch (error) {
-      let msg = "Có lỗi trong quá trình gửi OTP qua email!";
-      if (error.response) {
-        msg = error.response.data;
-      }
-      return {
-        status: false,
-        msg,
-      };
-    }
-  },
-  getInterbankAccount: (accountNumberFromBody) => async (dispatch) => {
-    const accountNumber = accountNumberFromBody
-      ? accountNumberFromBody
-      : "0000000000000";
-    instance.defaults.headers.common["x_authorization"] = localStorage.getItem(
-      localStorageVariable.storeAccessToken
-    );
-    try {
-      const { data } = await instance.get(
-        `transactions/interbank/accountNumber/${accountNumber}`
-      );
-      return {
-        status: true,
-        data,
-      };
-    } catch (error) {
-      return {
-        status: false,
-      };
-    }
-  },
-  getMoneyReceivingTransaction: () => async (dispatch) => {
-    instance.defaults.headers.common["x_authorization"] = localStorage.getItem(
-      localStorageVariable.storeAccessToken
-    );
-    try {
-      const { data } = await instance.get(`transactions/money-receiving`);
-      dispatch({
-        type: "GET_MONEY_RECEIVING_TRANSACTION",
-        payload: data,
+      await instance.patch(`categories/${id}/name`, {
+        ten,
       });
-    } catch (error) {}
-  },
-  getMoneySendingTransaction: () => async (dispatch) => {
-    instance.defaults.headers.common["x_authorization"] = localStorage.getItem(
-      localStorageVariable.storeAccessToken
-    );
-    try {
-      const { data } = await instance.get(`transactions/money-sending`);
-      dispatch({
-        type: "GET_MONEY_SENDING_TRANSACTION",
-        payload: data,
-      });
-    } catch (error) {}
-  },
-  getDebtRemindersTransaction: () => async (dispatch) => {
-    instance.defaults.headers.common["x_authorization"] = localStorage.getItem(
-      localStorageVariable.storeAccessToken
-    );
-    try {
-      const { data } = await instance.get(
-        `transactions/payment-debt-reminders`
-      );
-      dispatch({
-        type: "GET_DEBT_REMINDERS_TRANSACTION",
-        payload: data,
-      });
-    } catch (error) {}
-  },
-};
 
-export const debtRemindersAction = {
-  detail: (_id) => async (_) => {
-    instance.defaults.headers.common["x_authorization"] = localStorage.getItem(
-      localStorageVariable.storeAccessToken
-    );
-    try {
-      const { data } = await instance.get(`debt-reminders/detail/${_id}`);
-      return {
-        status: true,
-        data,
-      };
-    } catch (error) {
-      return {
-        status: false,
-      };
-    }
-  },
-  getCreatingDebtReminders: () => async (dispatch) => {
-    instance.defaults.headers.common["x_authorization"] = localStorage.getItem(
-      localStorageVariable.storeAccessToken
-    );
-    try {
-      const { data } = await instance.get(`debt-reminders`);
       dispatch({
-        type: "GET_CREATING_DEBT_REMINDERS",
-        payload: data,
+        type: EDIT_CATEGORY_SUCCESS,
+        payload: {
+          id,
+          ten,
+        },
       });
-    } catch (error) {}
-  },
-  getUnpaidCreatedDebtReminders: () => async (dispatch) => {
-    instance.defaults.headers.common["x_authorization"] = localStorage.getItem(
-      localStorageVariable.storeAccessToken
-    );
-    try {
-      const { data } = await instance.get(
-        `debt-reminders/unpaid-created-debt-reminders`
-      );
-      dispatch({
-        type: "GET_UNPAID_CREATED_DEBT_REMINDERS",
-        payload: data,
-      });
-    } catch (error) {}
-  },
-  getPaidCreatedDebtReminders: () => async (dispatch) => {
-    instance.defaults.headers.common["x_authorization"] = localStorage.getItem(
-      localStorageVariable.storeAccessToken
-    );
-    try {
-      const { data } = await instance.get(
-        `debt-reminders/paid-created-debt-reminders`
-      );
-      dispatch({
-        type: "GET_PAID_CREATED_DEBT_REMINDERS",
-        payload: data,
-      });
-    } catch (error) {}
-  },
-  createDebtReminders: (debtReminders) => async (dispatch) => {
-    instance.defaults.headers.common["x_authorization"] = localStorage.getItem(
-      localStorageVariable.storeAccessToken
-    );
-    try {
-      const { data } = await instance.post(`debt-reminders`, debtReminders);
-      dispatch({
-        type: "ADD_DEBT_REMINDERS_SUCCESS",
-        payload: data,
-      });
-      return {
-        status: true,
-      };
-    } catch (error) {
-      let msg = "Có lỗi trong quá trình tạo nhắc nợ!";
-      if (error.response) {
-        msg = error.response.data;
-      }
-      return {
-        status: false,
-        msg,
-      };
-    }
-  },
-  removeDebtReminders: (_id, debtContent) => async (dispatch) => {
-    instance.defaults.headers.common["x_authorization"] = localStorage.getItem(
-      localStorageVariable.storeAccessToken
-    );
-    try {
-      const body = {
-        debtContent,
-      };
-      const { data } = await instance.post(
-        `debt-reminders/remove-debt-reminders/${_id}`,
-        body
-      );
-      dispatch({
-        type: "REMOVE_DEBT_REMINDERS_SUCCESS",
-        payload: data,
-      });
-      return {
-        status: true,
-      };
-    } catch (error) {
-      let msg = "Có lỗi trong quá trình hủy nhắc nợ!";
-      if (error.response) {
-        msg = error.response.data;
-      }
-      return {
-        status: false,
-        msg,
-      };
-    }
-  },
-  removeCreatedDebtReminders: (_id, debtContent) => async (dispatch) => {
-    instance.defaults.headers.common["x_authorization"] = localStorage.getItem(
-      localStorageVariable.storeAccessToken
-    );
-    try {
-      const body = {
-        debtContent,
-      };
-      const { data } = await instance.post(
-        `debt-reminders/remove-created-debt-reminders/${_id}`,
-        body
-      );
-      dispatch({
-        type: "REMOVE_CREATED_DEBT_REMINDERS_SUCCESS",
-        payload: data,
-      });
-      return {
-        status: true,
-      };
-    } catch (error) {
-      let msg = "Có lỗi trong quá trình hủy nhắc nợ!";
-      if (error.response) {
-        msg = error.response.data;
-      }
-      return {
-        status: false,
-        msg,
-      };
-    }
-  },
-  paymentCreatedDebtReminders: (_id, otp, debtContent) => async (dispatch) => {
-    instance.defaults.headers.common["x_authorization"] = localStorage.getItem(
-      localStorageVariable.storeAccessToken
-    );
-    try {
-      const { data } = await instance.post(
-        `debt-reminders/payment-created-debt-reminders/${_id}`,
-        {
-          otp,
-          debtContent,
-        }
-      );
-      dispatch({
-        type: "PAYMENT_CREATED_DEBT_REMINDERS_SUCCESS",
-        payload: data,
-      });
-      return {
-        status: true,
-        data,
-      };
-    } catch (error) {
-      let msg = "Có lỗi trong quá trình hủy nhắc nợ!";
-      if (error.response) {
-        msg = error.response.data;
-      }
-      return {
-        status: false,
-        msg,
-      };
-    }
-  },
-};
 
-export const notificationAction = {
-  calledSSENewNotification: () => async (dispatch) => {
-    dispatch({
-      type: "CALLED_SSE_NEW_NOTIFICATION",
-      payload: true,
-    });
-  },
-  getNotification: () => async (dispatch) => {
-    instance.defaults.headers.common["x_authorization"] = localStorage.getItem(
-      localStorageVariable.storeAccessToken
-    );
-    try {
-      const { data } = await instance.get(`notifications`);
-      dispatch({
-        type: "GET_NOTIFICATION",
-        payload: data,
-      });
       return {
         status: true,
-        data,
       };
-    } catch (error) {}
-  },
-  readNotification: (_id) => async (dispatch) => {
-    instance.defaults.headers.common["x_authorization"] = localStorage.getItem(
-      localStorageVariable.storeAccessToken
-    );
-    try {
-      const { data } = await instance.post(`notifications/read/${_id}`);
-      dispatch({
-        type: "READ_NOTIFICATION_SUCCESS",
-        payload: data,
-      });
+    } catch (error) {
+      let msg = "Có lỗi xảy ra, vui lòng thử lại.";
+      if (error.response) {
+        msg = error.response.data.message.toString();
+      }
+
       return {
-        status: true,
-        data,
+        status: false,
+        msg,
       };
-    } catch (error) {}
+    }
   },
 };
 
 const initialState = {
   accessToken: localStorage.getItem(localStorageVariable.storeAccessToken),
   account: localStorage.getItem(localStorageVariable.storeAccount),
-  desAccount: null,
-  receivers: [],
-  changeReceivers: true,
-  payment_savingAccounts: [],
-  debtReminders: {
-    list: [],
-    changeList: true,
-  },
-  unpaidCreatedDebtReminders: {
-    list: [],
-    changeList: true,
-  },
-  paidCreatedDebtReminders: {
-    list: [],
-    changeList: true,
-  },
-  isCalledSSENewNotification: false,
-  notification: {
-    amountNewNotifications: 0,
+  accountsList: {
     data: [],
+    change: true,
   },
-  transactionHistory: {
-    moneyReceivingTransactions: [],
-    moneySendingTransactions: [],
-    debtRemindersTransactions: [],
+  categoriesList: {
+    data: [],
+    change: true,
   },
+  editCategory: "",
 };
 
 export default (state = initialState, action) => {
-  // Reducer cho auth action
-  if (action.type === LOGIN_SUCCESS) {
-    return {
-      ...state,
-      accessToken: action.payload.accessToken,
-      account: action.payload.account,
-    };
-  } else if (action.type === "LOGOUT") {
-    return {
-      ...state,
-      accessToken: null,
-      account: null,
-    };
-  } else if (action.type === "GET_RECEIVERS") {
-    return {
-      ...state,
-      changeReceivers: false,
-      receivers: action.payload,
-    };
-  } else if (action.type === "ADD_RECEIVER_SUCCESS") {
-    const receiver = action.payload;
-    return {
-      ...state,
-      changeReceivers: true,
-      receivers: [...state.receivers, receiver],
-    };
-  } else if (action.type === "ADD_RECEIVER_FAILED") {
-    return {
-      ...state,
-      msg: action.payload.msg,
-    };
-  } else if (action.type === "DELETE_RECEIVERS_SUCCESS") {
-    return {
-      ...state,
-      changeReceivers: true,
-      receivers: action.payload,
-    };
-  } else if (action.type === "GET_PAYMENT_SAVING_ACCOUNTS") {
-    const payment_savingAccounts = action.payload.map((i) => Object.values(i));
-    return {
-      ...state,
-      payment_savingAccounts,
-    };
-  }
+  switch (action.type) {
+    // Reducer cho auth action
+    case LOGOUT_SUCCESS:
+      return {
+        ...state,
+        accessToken: action.payload.accessToken,
+        account: action.payload.account,
+      };
+    case LOGOUT_SUCCESS:
+      return {
+        ...state,
+        accessToken: null,
+        account: null,
+      };
 
-  // Reducer cho transaction action
-  else if (action.type === "GET_MONEY_RECEIVING_TRANSACTION") {
-    console.log(action.payload.data);
-    return {
-      ...state,
-      transactionHistory: {
-        moneyReceivingTransactions: action.payload,
-      },
-    };
-  } else if (action.type === "GET_MONEY_SENDING_TRANSACTION") {
-    return {
-      ...state,
-      transactionHistory: {
-        moneySendingTransactions: action.payload,
-      },
-    };
-  } else if (action.type === "GET_DEBT_REMINDERS_TRANSACTION") {
-    return {
-      ...state,
-      transactionHistory: {
-        debtRemindersTransactions: action.payload,
-      },
-    };
-  }
+    // Reducer cho account action
+    case GET_ACCOUNTS_LIST_SUCCESS:
+      return {
+        ...state,
+        accountsList: {
+          data: action.payload,
+          change: false,
+        },
+      };
 
-  // Reducer cho debt reminders action
-  else if (action.type === "GET_CREATING_DEBT_REMINDERS") {
-    state.debtReminders.changeList = false;
-    return {
-      ...state,
-      debtReminders: {
-        list: action.payload,
-        changeList: false,
-      },
-    };
-  } else if (action.type === "GET_UNPAID_CREATED_DEBT_REMINDERS") {
-    state.unpaidCreatedDebtReminders.changeList = false;
-    return {
-      ...state,
-      unpaidCreatedDebtReminders: {
-        list: action.payload,
-        changeList: false,
-      },
-    };
-  } else if (action.type === "GET_PAID_CREATED_DEBT_REMINDERS") {
-    state.paidCreatedDebtReminders.changeList = false;
-    return {
-      ...state,
-      paidCreatedDebtReminders: {
-        list: action.payload,
-        changeList: false,
-      },
-    };
-  } else if (action.type === "ADD_DEBT_REMINDERS_SUCCESS") {
-    return {
-      ...state,
-      debtReminders: {
-        list: [...state.debtReminders.list, action.payload],
-      },
-    };
-  } else if (action.type === "REMOVE_DEBT_REMINDERS_SUCCESS") {
-    return {
-      ...state,
-      debtReminders: {
-        list: state.debtReminders.list.map((i) => {
-          if (i._id === action.payload._id) {
-            return action.payload;
-          }
-          return i;
-        }),
-      },
-    };
-  } else if (action.type === "REMOVE_CREATED_DEBT_REMINDERS_SUCCESS") {
-    let data = [];
-    state.unpaidCreatedDebtReminders.list.forEach((i) => {
-      if (i._id !== action.payload._id) {
-        data.push(i);
-      }
-    });
-    return {
-      ...state,
-      unpaidCreatedDebtReminders: {
-        list: data,
-      },
-    };
-  } else if (action.type === "PAYMENT_CREATED_DEBT_REMINDERS_SUCCESS") {
-    let data = [];
-    state.unpaidCreatedDebtReminders.list.forEach((i) => {
-      if (i._id !== action.payload.debtReminders._id) {
-        data.push(i);
-      }
-    });
-    return {
-      ...state,
-      unpaidCreatedDebtReminders: {
-        list: data,
-      },
-      paidCreatedDebtReminders: {
-        list: [
-          ...state.paidCreatedDebtReminders.list,
-          action.payload.debtReminders,
-        ],
-      },
-    };
-  } else if (action.type === "CALLED_SSE_NEW_NOTIFICATION") {
-    return {
-      ...state,
-      isCalledSSENewNotification: action.payload,
-    };
-  } else if (action.type === "GET_NOTIFICATION") {
-    return {
-      ...state,
-      notification: {
-        amountNewNotifications: action.payload.amountNewNotifications,
-        data: action.payload.data,
-      },
-    };
-  } else if (action.type === "READ_NOTIFICATION_SUCCESS") {
-    let amountNewNotifications = state.notification.amountNewNotifications;
-    let data = [];
-    state.notification.data.forEach((i) => {
-      if (i._id === action.payload._id) {
-        amountNewNotifications--;
-        data.push(action.payload);
-      } else {
-        data.push(i);
-      }
-    });
+    // Reducer cho categories action
+    case GET_CATEGORIES_LIST_SUCCES:
+      return {
+        ...state,
+        categoriesList: {
+          data: action.payload,
+          change: false,
+        },
+      };
+    case ADD_CATEGORY_SUCCESS:
+      return {
+        ...state,
+        categoriesList: {
+          change: false,
+          data: [...state.categoriesList.data, action.payload],
+        },
+      };
+    case DELETE_CATEGORY_SUCCESS:
+      return {
+        ...state,
+        categoriesList: {
+          change: false,
+          data: state.categoriesList.data.filter(
+            (i) => i.id !== action.payload.id
+          ),
+        },
+      };
+    case HANDLE_EDIT_CATEGORY:
+      return {
+        ...state,
+        editCategory: action.payload.id,
+      };
+    case EDIT_CATEGORY_SUCCESS:
+      return {
+        ...state,
+        categoriesList: {
+          change: false,
+          data: state.categoriesList.data.map((i) => {
+            if (i.id === action.payload.id) {
+              i.ten = action.payload.ten;
+            }
+            return i;
+          }),
+        },
+      };
 
-    return {
-      ...state,
-      notification: {
-        amountNewNotifications: amountNewNotifications,
-        data: data,
-      },
-    };
+    default:
+      return state;
   }
-  return state;
 };

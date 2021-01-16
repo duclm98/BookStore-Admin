@@ -101,7 +101,7 @@ const Layouts = ({ rest, accessToken }) => {
         <div>
         <Sidebar
         routes={routes}
-        logoText={"GROUP2 BANKING"}
+        logoText={"BOOK STORE"}
         logo={logo}
         image={image}
         handleDrawerToggle={handleDrawerToggle}

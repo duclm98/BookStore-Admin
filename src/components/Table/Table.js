@@ -15,6 +15,7 @@ const useStyles = makeStyles(styles);
 export default function CustomTable(props) {
   const classes = useStyles();
   const { tableHead, tableData, tableHeaderColor } = props;
+  console.log(props);
   return (
     <div className={classes.tableResponsive}>
       <Table className={classes.table}>

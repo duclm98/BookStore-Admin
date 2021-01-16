@@ -1,4 +1,4 @@
 # Ứng dụng bán sách, phân hệ admin
 ## Tài khoản demo:
-* Username: duc
+* Username: admin
 * Password: 12345

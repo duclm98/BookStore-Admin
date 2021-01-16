@@ -17,33 +17,32 @@
 */
 // @material-ui/icons
 import LibraryBooks from "@material-ui/icons/LibraryBooks";
-import SettingsApplicationsOutlined from '@material-ui/icons/SettingsApplicationsOutlined';
-import HistoryOutlined from '@material-ui/icons/HistoryOutlined';
+import HistoryOutlined from "@material-ui/icons/HistoryOutlined";
+import PeopleAltOutlined from "@material-ui/icons/PeopleAltOutlined";
 
 // core components/views for Admin layout
-import AccountsListPage from 'views/AccountsList/AccountsList.js';
-import TransactionHistoryPage from 'views/TransactionHistory/TransactionHistory.js';
-import SettingPage from 'views/Setting/Setting.js';
+import AccountsListPage from "views/AccountsList/AccountsList.js";
+import CategoriesPage from "views/Categories/Categories.js";
 
 const dashboardRoutes = [
   {
     path: "/home",
     name: "Danh sách tài khoản",
-    icon: LibraryBooks,
+    icon: PeopleAltOutlined,
     component: AccountsListPage,
   },
   {
-    path: "/history-transactions",
-    name: "Lịch sử giao dịch",
-    icon: HistoryOutlined,
-    component: TransactionHistoryPage,
+    path: "/categories",
+    name: "Danh mục sách",
+    icon: LibraryBooks,
+    component: CategoriesPage,
   },
-  {
-    path: "/setting",
-    name: "Cài đặt",
-    icon: SettingsApplicationsOutlined,
-    component: SettingPage,
-  },
+  // {
+  //   path: "/posts",
+  //   name: "Bài đăng",
+  //   icon: HistoryOutlined,
+  //   component: TransactionHistoryPage,
+  // },
 ];
 
 export default dashboardRoutes;

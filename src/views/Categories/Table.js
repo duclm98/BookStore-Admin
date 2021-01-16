@@ -1,5 +1,6 @@
 import React from "react";
 import { connect } from "react-redux";
+import { toast } from "react-toastify";
 import PropTypes from "prop-types";
 import clsx from "clsx";
 import { lighten, makeStyles } from "@material-ui/core/styles";
@@ -19,29 +20,36 @@ import IconButton from "@material-ui/core/IconButton";
 import Tooltip from "@material-ui/core/Tooltip";
 import FormControlLabel from "@material-ui/core/FormControlLabel";
 import Switch from "@material-ui/core/Switch";
+import DeleteIcon from "@material-ui/icons/Delete";
+import EditIcon from "@material-ui/icons/Edit";
 import FilterListIcon from "@material-ui/icons/FilterList";
 
-import Button from "components/CustomButtons/Button.js";
+import { categoryAction } from "../../redux";
 
 const headCells = [
-  { id: "_id", numeric: false, disablePadding: true, label: "ID" },
   {
-    id: "accountNumber",
-    numeric: true,
-    disablePadding: false,
-    label: "Số tài khoản",
+    id: "id",
+    numeric: false,
+    disablePadding: true,
+    label: "Mã sách",
   },
   {
-    id: "accountName",
+    id: "ten",
     numeric: true,
     disablePadding: false,
-    label: "Tên tài khoản",
+    label: "Tên sách",
   },
   {
-    id: "accountNameReminiscent",
+    id: "updatedAt",
     numeric: true,
     disablePadding: false,
-    label: "Tên gợi nhớ",
+    label: "Ngày cập nhật",
+  },
+  {
+    id: "createdAt",
+    numeric: true,
+    disablePadding: false,
+    label: "Ngày tạo",
   },
 ];
 
@@ -154,7 +162,7 @@ const useToolbarStyles = makeStyles((theme) => ({
 
 const EnhancedTableToolbar = (props) => {
   const classes = useToolbarStyles();
-  const { numSelected, selected, setSelect } = props;
+  const { numSelected, dispatch, selected } = props;
 
   return (
     <Toolbar
@@ -178,18 +186,38 @@ const EnhancedTableToolbar = (props) => {
           id="tableTitle"
           component="div"
         >
-          Chọn từ danh sách
+          Danh bạ thụ hưởng
         </Typography>
       )}
 
       {numSelected > 0 ? (
-        <Tooltip title="Thêm">
-          <Button color="primary" onClick={() => {
-              setSelect(selected);
-            }}>
-            Chọn
-          </Button>
-        </Tooltip>
+        <div>
+          <Tooltip title="Sửa">
+            <IconButton
+              aria-label="edit"
+              onClick={async () => {
+                await dispatch(categoryAction.handleEditCategory(selected[0]));
+              }}
+            >
+              <EditIcon />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Xóa">
+            <IconButton
+              aria-label="delete"
+              onClick={async () => {
+                const result = await dispatch(
+                  categoryAction.deleteCategory(selected[0])
+                );
+                if (!result.status) {
+                  return toast.error(result.msg);
+                }
+              }}
+            >
+              <DeleteIcon />
+            </IconButton>
+          </Tooltip>
+        </div>
       ) : (
         <Tooltip title="Filter list">
           <IconButton aria-label="filter list">
@@ -230,13 +258,13 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 const EnhancedTable = (props) => {
-  const { rows, setSelect } = props;
+  const { rows, dispatch } = props;
   const classes = useStyles();
   const [order, setOrder] = React.useState("asc");
   const [orderBy, setOrderBy] = React.useState();
   const [selected, setSelected] = React.useState([]);
   const [page, setPage] = React.useState(0);
-  const [dense, setDense] = React.useState(true);
+  const [dense, setDense] = React.useState(false);
   const [rowsPerPage, setRowsPerPage] = React.useState(5);
 
   const handleRequestSort = (event, property) => {
@@ -247,19 +275,19 @@ const EnhancedTable = (props) => {
 
   const handleSelectAllClick = (event) => {
     if (event.target.checked) {
-      const newSelecteds = rows.map((n) => n._id);
+      const newSelecteds = rows.map((n) => n.id);
       setSelected(newSelecteds);
       return;
     }
     setSelected([]);
   };
 
-  const handleClick = (event, _id) => {
-    const selectedIndex = selected.indexOf(_id);
+  const handleClick = (event, id) => {
+    const selectedIndex = selected.indexOf(id);
     let newSelected = [];
 
     if (selectedIndex === -1) {
-      newSelected = newSelected.concat(selected, _id);
+      newSelected = newSelected.concat(selected, id);
     } else if (selectedIndex === 0) {
       newSelected = newSelected.concat(selected.slice(1));
     } else if (selectedIndex === selected.length - 1) {
@@ -287,7 +315,7 @@ const EnhancedTable = (props) => {
     setDense(event.target.checked);
   };
 
-  const isSelected = (_id) => selected.indexOf(_id) !== -1;
+  const isSelected = (id) => selected.indexOf(id) !== -1;
 
   const emptyRows =
     rowsPerPage - Math.min(rowsPerPage, rows.length - page * rowsPerPage);
@@ -297,7 +325,7 @@ const EnhancedTable = (props) => {
       <Paper className={classes.paper}>
         <EnhancedTableToolbar
           numSelected={selected.length}
-          setSelect={setSelect}
+          dispatch={dispatch}
           selected={selected}
         />
         <TableContainer>
@@ -320,17 +348,17 @@ const EnhancedTable = (props) => {
               {stableSort(rows, getComparator(order, orderBy))
                 .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                 .map((row, index) => {
-                  const isItemSelected = isSelected(row._id);
+                  const isItemSelected = isSelected(row.id);
                   const labelId = `enhanced-table-checkbox-${index}`;
 
                   return (
                     <TableRow
                       hover
-                      onClick={(event) => handleClick(event, row._id)}
+                      onClick={(event) => handleClick(event, row.id)}
                       role="checkbox"
                       aria-checked={isItemSelected}
                       tabIndex={-1}
-                      key={row._id}
+                      key={row.id}
                       selected={isItemSelected}
                     >
                       <TableCell padding="checkbox">
@@ -345,13 +373,11 @@ const EnhancedTable = (props) => {
                         scope="row"
                         padding="none"
                       >
-                        {row._id}
+                        {row.id}
                       </TableCell>
-                      <TableCell align="right">{row.accountNumber}</TableCell>
-                      <TableCell align="right">{row.accountName}</TableCell>
-                      <TableCell align="right">
-                        {row.accountNameReminiscent}
-                      </TableCell>
+                      <TableCell align="right">{row.ten}</TableCell>
+                      <TableCell align="right">{row.updatedAt}</TableCell>
+                      <TableCell align="right">{row.createdAt}</TableCell>
                     </TableRow>
                   );
                 })}

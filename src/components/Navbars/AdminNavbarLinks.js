@@ -14,7 +14,6 @@ import Poppers from "@material-ui/core/Popper";
 import Divider from "@material-ui/core/Divider";
 // @material-ui/icons
 import Person from "@material-ui/icons/Person";
-import Notifications from "@material-ui/icons/Notifications";
 // core components
 import Button from "components/CustomButtons/Button.js";
 
@@ -22,34 +21,18 @@ import styles from "assets/jss/material-dashboard-react/components/headerLinksSt
 
 import * as localStorageVariable from "../../variables/LocalStorage";
 
-import { authAction, notificationAction } from "../../redux";
+import { authAction } from "../../redux";
 
 const useStyles = makeStyles(styles);
 
-const AdminNavbarLinks = ({
-  dispatch,
-  isCalledSSENewNotification,
-  notificationFromState,
-}) => {
+const AdminNavbarLinks = ({ dispatch }) => {
   const classes = useStyles();
 
   const account = JSON.parse(
     localStorage.getItem(localStorageVariable.storeAccount)
   );
 
-  const [openNotification, setOpenNotification] = React.useState(null);
   const [openProfile, setOpenProfile] = React.useState(null);
-
-  const handleClickNotification = (event) => {
-    if (openNotification && openNotification.contains(event.target)) {
-      setOpenNotification(null);
-    } else {
-      setOpenNotification(event.currentTarget);
-    }
-  };
-  const handleCloseNotification = () => {
-    setOpenNotification(null);
-  };
 
   const handleClickProfile = (event) => {
     if (openProfile && openProfile.contains(event.target)) {
@@ -66,136 +49,8 @@ const AdminNavbarLinks = ({
     dispatch(authAction.logout());
   };
 
-  const [notification, setNotification] = useState(notificationFromState);
-
-  // Xử lý real-time khi có thông báo mới
-  const [sseNotification, setSseNotification] = useState(null);
-
-  const sse = (url, event) => {
-    setSseNotification(null);
-    if (typeof EventSource === "undefined") {
-      console.log("not support");
-      return;
-    }
-
-    const src = new EventSource(url);
-
-    src.onerror = function (e) {
-      console.log("error: " + e);
-    };
-
-    src.addEventListener(
-      event,
-      function (e) {
-        setSseNotification(JSON.parse(e.data));
-      },
-      false
-    );
-  };
-
-  useEffect(() => {
-    if (!isCalledSSENewNotification) {
-      const url = `${process.env.REACT_APP_BASE_BACKEND_URL}notifications/new-notification-event`;
-      sse(url, "NEW_NOTIFICATION");
-
-      dispatch(notificationAction.calledSSENewNotification());
-      dispatch(notificationAction.getNotification());
-    }
-  }, [isCalledSSENewNotification]);
-
-  useEffect(() => {
-    if (sseNotification && sseNotification.status) {
-      dispatch(notificationAction.getNotification());
-    }
-  }, [sseNotification]);
-
-  useEffect(() => {
-    setNotification({
-      amountNewNotifications: notificationFromState.amountNewNotifications,
-      data: notificationFromState.data,
-    });
-  }, [notificationFromState]);
-
-  const handleReadNotification = async (_id) => {
-    dispatch(notificationAction.readNotification(_id));
-    setOpenNotification(null);
-  };
-
-  const renderNotification = () => {
-    return notification.data.map((i) => {
-      let backgroundColor = "#F8F8FF";
-      if (i.isRead === false) {
-        backgroundColor = "#9FB6CD";
-      }
-      const style = { backgroundColor: backgroundColor };
-      return (
-        <MenuItem
-          style={style}
-          onClick={() => {
-            handleReadNotification(i._id);
-          }}
-          className={classes.dropdownItem}
-        >
-          {i.content}
-          <p>{i.datetime}</p>
-        </MenuItem>
-      );
-    });
-  };
-
   return (
     <div>
-      <div className={classes.manager}>
-        <Button
-          color={window.innerWidth > 959 ? "transparent" : "white"}
-          justIcon={window.innerWidth > 959}
-          simple={!(window.innerWidth > 959)}
-          aria-owns={openNotification ? "notification-menu-list-grow" : null}
-          aria-haspopup="true"
-          onClick={handleClickNotification}
-          className={classes.buttonLink}
-        >
-          <Notifications className={classes.icons} />
-          {notification.amountNewNotifications !== 0 ? (
-            <span className={classes.notifications}>
-              {notification.amountNewNotifications}
-            </span>
-          ) : null}
-          <Hidden mdUp implementation="css">
-            <p onClick={handleCloseNotification} className={classes.linkText}>
-              Notification
-            </p>
-          </Hidden>
-        </Button>
-        <Poppers
-          open={Boolean(openNotification)}
-          anchorEl={openNotification}
-          transition
-          disablePortal
-          className={
-            classNames({ [classes.popperClose]: !openNotification }) +
-            " " +
-            classes.popperNav
-          }
-        >
-          {({ TransitionProps, placement }) => (
-            <Grow
-              {...TransitionProps}
-              id="notification-menu-list-grow"
-              style={{
-                transformOrigin:
-                  placement === "bottom" ? "center top" : "center bottom",
-              }}
-            >
-              <Paper>
-                <ClickAwayListener onClickAway={handleCloseNotification}>
-                  <MenuList role="menu">{renderNotification()}</MenuList>
-                </ClickAwayListener>
-              </Paper>
-            </Grow>
-          )}
-        </Poppers>
-      </div>
       <div className={classes.manager}>
         <Button
           color={window.innerWidth > 959 ? "transparent" : "white"}
@@ -264,11 +119,4 @@ const AdminNavbarLinks = ({
   );
 };
 
-const mapStateToProps = (state) => {
-  return {
-    isCalledSSENewNotification: state.isCalledSSENewNotification,
-    notificationFromState: state.notification,
-  };
-};
-
-export default connect(mapStateToProps)(AdminNavbarLinks);
+export default connect()(AdminNavbarLinks);

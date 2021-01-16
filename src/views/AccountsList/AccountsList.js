@@ -6,37 +6,50 @@ import { makeStyles } from "@material-ui/core/styles";
 import GridItem from "components/Grid/GridItem.js";
 import GridContainer from "components/Grid/GridContainer.js";
 import Button from "components/CustomButtons/Button.js";
-import Table from "components/Table/Table.js";
 import Card from "components/Card/Card.js";
 import CardHeader from "components/Card/CardHeader.js";
 import CardBody from "components/Card/CardBody.js";
 
+import Table from "./Table.js";
+
 import styles from "assets/jss/material-dashboard-react/views/dashboardStyle.js";
 
-import { authAction } from "../../redux";
+import { accountAction } from "../../redux";
 
 const useStyles = makeStyles(styles);
 
-const AccountsList = ({ dispatch, payment_savingAccountsFromState }) => {
+const mapStateToProps = (state) => {
+  return {
+    accountsList: state.accountsList,
+  };
+};
+
+const AccountsList = ({ dispatch, accountsList }) => {
   const classes = useStyles();
 
   const [type, setType] = useState({
     code: 0,
-    name: "Tài khoản thanh toán",
+    name: "Tài khoản quản lý",
   });
   const [accounts, setAccounts] = useState([]);
 
-  useEffect(() => {
-    if (type.code === 0) {
-      dispatch(authAction.getPaymentAccounts());
-    } else if (type.code === 1) {
-      dispatch(authAction.getSavingAccounts());
-    }
-  }, [type]);
+  const getAccountsList = async () => {
+    await dispatch(accountAction.getAccounts());
+  };
 
   useEffect(() => {
-    setAccounts(payment_savingAccountsFromState);
-  }, [payment_savingAccountsFromState]);
+    if (accountsList.change) {
+      getAccountsList();
+    }
+  }, [accountsList.change]);
+
+  useEffect(() => {
+    if (type.code === 0) {
+      setAccounts(accountsList.data.filter((i) => i.vaiTro === "quan_ly"));
+    } else if (type.code === 1) {
+      setAccounts(accountsList.data.filter((i) => i.vaiTro === "khach_hang"));
+    }
+  }, [type, accountsList.data]);
 
   return (
     <div>
@@ -56,11 +69,11 @@ const AccountsList = ({ dispatch, payment_savingAccountsFromState }) => {
                     onClick={() => {
                       setType({
                         code: 0,
-                        name: "Tài khoản thanh toán",
+                        name: "Tài khoản quản lý",
                       });
                     }}
                   >
-                    Tài khoản thanh toán
+                    Tài khoản quản lý
                   </Button>
                   <Button
                     color="primary"
@@ -68,20 +81,16 @@ const AccountsList = ({ dispatch, payment_savingAccountsFromState }) => {
                     onClick={() => {
                       setType({
                         code: 1,
-                        name: "Tài khoản tiết kiệm",
+                        name: "Tài khoản khách hàng",
                       });
                     }}
                   >
-                    Tài khoản tiết kiệm
+                    Tài khoản khách hàng
                   </Button>
                 </GridItem>
                 <GridItem xs={12} sm={12} md={9}>
                   <h4>{type.name}</h4>
-                  <Table
-                    tableHeaderColor="warning"
-                    tableHead={["ID", "Số tài khoản", "Số dư"]}
-                    tableData={accounts}
-                  />
+                  <Table rows={accounts || []}></Table>
                 </GridItem>
               </GridContainer>
             </CardBody>
@@ -90,12 +99,6 @@ const AccountsList = ({ dispatch, payment_savingAccountsFromState }) => {
       </GridContainer>
     </div>
   );
-};
-
-const mapStateToProps = (state) => {
-  return {
-    payment_savingAccountsFromState: state.payment_savingAccounts,
-  };
 };
 
 export default connect(mapStateToProps)(AccountsList);
