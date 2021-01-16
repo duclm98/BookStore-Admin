@@ -244,7 +244,7 @@ const initialState = {
 export default (state = initialState, action) => {
   switch (action.type) {
     // Reducer cho auth action
-    case LOGOUT_SUCCESS:
+    case LOGIN_SUCCESS:
       return {
         ...state,
         accessToken: action.payload.accessToken,

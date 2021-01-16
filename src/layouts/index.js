@@ -41,6 +41,12 @@ const switchRoutes = (
 
 const useStyles = makeStyles(styles);
 
+const mapStateToProps = state => {
+  return {
+    accessToken: state.accessToken
+  }
+}
+
 const Layouts = ({ rest, accessToken }) => {
 
   // styles
@@ -139,12 +145,6 @@ const Layouts = ({ rest, accessToken }) => {
       )}
     </div>
   );
-}
-
-const mapStateToProps = state => {
-  return {
-    accessToken: state.accessToken
-  }
 }
 
 export default connect(mapStateToProps)(Layouts);
